@@ -1,7 +1,11 @@
 ver2plt
 =======
 
+### Description
+
 .ver to .plt files converter
+
+### Installation
 
 You can directly download 64-bit binaries:
 
