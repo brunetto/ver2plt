@@ -21,6 +21,13 @@ go get https://github.com/brunetto/ver2plt
 
 Just call
 
+
+(on Windows)
+````bash
+ver2plt-WIN.exe inputfile.ver
+````
+
+(on Linux)
 ````bash
 ver2plt inputfile.ver
 ````
