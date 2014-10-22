@@ -31,7 +31,7 @@ Just call
 ./ver2plt inputfile.ver
 ````
 
-in the folder you are working on, where `inputfile.ver` is your `.ver` file, and it will 
+where `inputfile.ver` is your `.ver` file, in the folder you are working on, and it will 
 produce 
 
 ````bash
