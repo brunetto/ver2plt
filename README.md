@@ -3,7 +3,7 @@ ver2plt
 
 ### Description
 
-.ver to .plt files converter
+`.ver` to `.plt` files converter
 
 ### Installation
 
