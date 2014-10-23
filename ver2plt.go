@@ -49,14 +49,15 @@ func main() {
 
 	baseFileName = strings.Trim(inFileName, ext)
 
+	// Start goroutines
 	go writeFloats("coords-"+baseFileName+".plt", floatChan, done)
 	go writeInts("idxs-"+baseFileName+".plt", intChan, done)
 
+	// Open infile for reading
 	if inFile, err = os.Open(inFileName); err != nil {
 		log.Fatal(err)
 	}
 	defer inFile.Close()
-
 	nReader = bufio.NewReader(inFile)
 
 	// Scan lines
@@ -91,10 +92,11 @@ func main() {
 		}
 	}
 
+	// Close channels to send shutdown signal to goroutines
 	close(floatChan)
 	close(intChan)
 
-	// Shut down goroutines
+	// Empty "done"channels to complete goroutines shutdown
 	for idx := 0; idx < 2; idx++ {
 		<-done
 	}
@@ -108,6 +110,8 @@ func writeFloats(fileName string, floatChan chan []string, done chan struct{}) {
 		nums    []string
 		err     error
 	)
+	
+	// Open file for writing
 	outFile, err = os.Create(fileName)
 	defer outFile.Close()
 	if err != nil {
@@ -116,6 +120,7 @@ func writeFloats(fileName string, floatChan chan []string, done chan struct{}) {
 	nWriter = bufio.NewWriter(outFile)
 	defer nWriter.Flush()
 
+	// Write to file
 	for nums = range floatChan {
 		if _, err = nWriter.WriteString(nums[1] + "\t" + nums[2] + "\t" + nums[3] + "\n"); err != nil {
 			log.Fatalf("Can't write to %v with error %v\n", fileName, err)
@@ -133,6 +138,8 @@ func writeInts(fileName string, intChan chan []string, done chan struct{}) {
 		err        error
 		n1, n2, n3 int64
 	)
+	
+	// Open file for writing
 	outFile, err = os.Create(fileName)
 	defer outFile.Close()
 	if err != nil {
@@ -141,6 +148,7 @@ func writeInts(fileName string, intChan chan []string, done chan struct{}) {
 	nWriter = bufio.NewWriter(outFile)
 	defer nWriter.Flush()
 
+	// Write to file decreasing ints by 1
 	for nums = range intChan {
 		// Parse Ints to be able to decrease them
 		if n1, err = strconv.ParseInt(nums[1], 10, 64); err != nil {

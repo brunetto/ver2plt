@@ -23,7 +23,7 @@ Just call
 
 (on Windows)
 ````bash
-./ver2plt-WIN.exe inputfile.ver
+ver2plt-WIN.exe inputfile.ver
 ````
 
 (on Linux)
