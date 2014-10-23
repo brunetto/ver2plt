@@ -26,10 +26,14 @@ func main() {
 		err                                 error
 		inFileName, baseFileName, ext, line string
 		inFile                              *os.File
+		outFile                             *os.File
 		nReader                             *bufio.Reader
+		nWriter                             *bufio.Writer
+		regFirstLineString                  string         = `^\s*(\d+)\s+(\d+)\s*$`
 		regFloatsString                     string         = `^\s*(-*\d+\.\d+\w*[-\+]{0,1}\d*)\s+(-*\d+\.\d+\w*[-\+]{0,1}\d*)\s+(-*\d+\.\d+\w*[-\+]{0,1}\d*)`
 		regIntsString                       string         = `^\s*(\d+)\s+(\d+)\s+(\d+)`
-		regSingleIntString                  string         = `^\s*\d`
+		regSingleIntString                  string         = `^\s*\d\s*$`
+		regFirstLine                        *regexp.Regexp = regexp.MustCompile(regFirstLineString)
 		regFloats                           *regexp.Regexp = regexp.MustCompile(regFloatsString)
 		regInts                             *regexp.Regexp = regexp.MustCompile(regIntsString)
 		regSingleInt                        *regexp.Regexp = regexp.MustCompile(regSingleIntString)
@@ -50,8 +54,8 @@ func main() {
 	baseFileName = strings.Trim(inFileName, ext)
 
 	// Start goroutines
-	go writeFloats("coords-"+baseFileName+".plt", floatChan, done)
-	go writeInts("idxs-"+baseFileName+".plt", intChan, done)
+	go writeFloats(nWriter, floatChan, done)
+	go writeInts(nWriter, intChan, done)
 
 	// Open infile for reading
 	if inFile, err = os.Open(inFileName); err != nil {
@@ -59,6 +63,14 @@ func main() {
 	}
 	defer inFile.Close()
 	nReader = bufio.NewReader(inFile)
+
+	outFile, err = os.Create(baseFileName + ".plt")
+	defer outFile.Close()
+	if err != nil {
+		log.Fatal(err)
+	}
+	nWriter = bufio.NewWriter(outFile)
+	defer nWriter.Flush()
 
 	// Scan lines
 	for {
@@ -79,13 +91,19 @@ func main() {
 		}
 
 		// Try to understand the line type
-		if regRes = regFloats.FindStringSubmatch(line); regRes != nil {
+		if regRes = regFloats.FindStringSubmatch(line); len(regRes) != 0 {
+			// Found first line, write to file
+			if _, err = nWriter.WriteString(regRes[1] + "\t" + regRes[2] + "\n"); err != nil {
+				log.Fatalf("Can't write to %v with error %v\n", "output", err)
+			}
+			nWriter.Flush()
+		} else if regRes = regFirstLine.FindStringSubmatch(line); len(regRes) != 0 {
 			// Found floats, send them to coords file writing
 			floatChan <- regRes
-		} else if regRes = regInts.FindStringSubmatch(line); regRes != nil {
+		} else if regRes = regInts.FindStringSubmatch(line); len(regRes) != 0 {
 			// Found ints, send them to idxs file writing
 			intChan <- regRes
-		} else if regRes = regSingleInt.FindStringSubmatch(line); regRes != nil {
+		} else if regRes = regSingleInt.FindStringSubmatch(line); len(regRes) != 0 {
 			// Found single int, do nothing
 		} else {
 			log.Fatal("Can't understand line ", line)
@@ -103,50 +121,34 @@ func main() {
 
 }
 
-func writeFloats(fileName string, floatChan chan []string, done chan struct{}) {
-	var (
-		outFile *os.File
-		nWriter *bufio.Writer
-		nums    []string
-		err     error
-	)
+func writeFloats(nWriter *bufio.Writer, floatChan chan []string, done chan struct{}) {
 	
-	// Open file for writing
-	outFile, err = os.Create(fileName)
-	defer outFile.Close()
-	if err != nil {
-		log.Fatal(err)
-	}
-	nWriter = bufio.NewWriter(outFile)
-	defer nWriter.Flush()
-
+	var (
+		nums []string
+		err  error
+	)
+	defer log.Println(len(nums))
 	// Write to file
 	for nums = range floatChan {
-		if _, err = nWriter.WriteString(nums[1] + "\t" + nums[2] + "\t" + nums[3] + "\n"); err != nil {
-			log.Fatalf("Can't write to %v with error %v\n", fileName, err)
+		if len(nums) == 0 {
+			log.Fatal(nums)
 		}
+		if _, err = nWriter.WriteString(nums[1] + "\t" + nums[2] + "\t" + nums[3] + "\n"); err != nil {
+			log.Fatalf("Can't write to %v with error %v\n", "output", err)
+		}
+		nWriter.Flush()
 	}
+
 	// Send end signal
 	done <- struct{}{}
 }
 
-func writeInts(fileName string, intChan chan []string, done chan struct{}) {
+func writeInts(nWriter *bufio.Writer, intChan chan []string, done chan struct{}) {
 	var (
-		outFile    *os.File
-		nWriter    *bufio.Writer
 		nums       []string
 		err        error
 		n1, n2, n3 int64
 	)
-	
-	// Open file for writing
-	outFile, err = os.Create(fileName)
-	defer outFile.Close()
-	if err != nil {
-		log.Fatal(err)
-	}
-	nWriter = bufio.NewWriter(outFile)
-	defer nWriter.Flush()
 
 	// Write to file decreasing ints by 1
 	for nums = range intChan {
@@ -165,10 +167,11 @@ func writeInts(fileName string, intChan chan []string, done chan struct{}) {
 		if _, err = nWriter.WriteString(strconv.FormatInt(n1-1, 10) + "\t" +
 			strconv.FormatInt(n2-1, 10) + "\t" +
 			strconv.FormatInt(n3-1, 10) + "\n"); err != nil {
-			log.Fatalf("Can't write to %v with error %v\n", fileName, err)
+			log.Fatalf("Can't write to %v with error %v\n", "output", err)
 		}
-
+		nWriter.Flush()
 	}
+
 	// Send end signal
 	done <- struct{}{}
 }
