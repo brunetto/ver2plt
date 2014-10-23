@@ -126,6 +126,8 @@ func writeFloats(fileName string, floatChan chan []string, done chan struct{}) {
 			log.Fatalf("Can't write to %v with error %v\n", fileName, err)
 		}
 	}
+	// For some reason, flush does not work with defer here
+	nWriter.Flush()
 	// Send end signal
 	done <- struct{}{}
 }
@@ -169,6 +171,8 @@ func writeInts(fileName string, intChan chan []string, done chan struct{}) {
 		}
 
 	}
+	// For some reason, flush does not work with defer here
+	nWriter.Flush()
 	// Send end signal
 	done <- struct{}{}
 }
