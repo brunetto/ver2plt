@@ -104,6 +104,8 @@ func main() {
 }
 
 func writeFloats(fileName string, floatChan chan []string, done chan struct{}) {
+	// Send end signal
+	defer done <- struct{}{}
 	var (
 		outFile *os.File
 		nWriter *bufio.Writer
@@ -127,9 +129,8 @@ func writeFloats(fileName string, floatChan chan []string, done chan struct{}) {
 		}
 	}
 	// For some reason, flush does not work with defer here
-	nWriter.Flush()
-	// Send end signal
-	done <- struct{}{}
+// 	nWriter.Flush()
+	
 }
 
 func writeInts(fileName string, intChan chan []string, done chan struct{}) {
