@@ -105,14 +105,16 @@ func main() {
 
 func writeFloats(fileName string, floatChan chan []string, done chan struct{}) {
 	// Send end signal
-	defer done <- struct{}{}
+	defer func() {
+		done <- struct{}{}
+	}()
 	var (
 		outFile *os.File
 		nWriter *bufio.Writer
 		nums    []string
 		err     error
 	)
-	
+
 	// Open file for writing
 	outFile, err = os.Create(fileName)
 	defer outFile.Close()
@@ -128,12 +130,12 @@ func writeFloats(fileName string, floatChan chan []string, done chan struct{}) {
 			log.Fatalf("Can't write to %v with error %v\n", fileName, err)
 		}
 	}
-	// For some reason, flush does not work with defer here
-// 	nWriter.Flush()
-	
 }
 
 func writeInts(fileName string, intChan chan []string, done chan struct{}) {
+	defer func() {
+		done <- struct{}{}
+	}()
 	var (
 		outFile    *os.File
 		nWriter    *bufio.Writer
@@ -141,7 +143,7 @@ func writeInts(fileName string, intChan chan []string, done chan struct{}) {
 		err        error
 		n1, n2, n3 int64
 	)
-	
+
 	// Open file for writing
 	outFile, err = os.Create(fileName)
 	defer outFile.Close()
@@ -170,10 +172,5 @@ func writeInts(fileName string, intChan chan []string, done chan struct{}) {
 			strconv.FormatInt(n3-1, 10) + "\n"); err != nil {
 			log.Fatalf("Can't write to %v with error %v\n", fileName, err)
 		}
-
 	}
-	// For some reason, flush does not work with defer here
-	nWriter.Flush()
-	// Send end signal
-	done <- struct{}{}
 }
